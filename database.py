@@ -1,4 +1,12 @@
-"""Database module — stores scraped job listings in SQLite."""
+"""
+Database module — stores scraped data in SQLite.
+
+STEPS TO ADAPT:
+  1. Edit the CREATE TABLE in init_db() to match YOUR data fields
+  2. Update insert_record() parameter names to match your columns
+  3. Update search_records() to search the columns that matter to you
+  4. Update the UNIQUE INDEX to define what counts as a duplicate
+"""
 
 import sqlite3
 from contextlib import contextmanager
@@ -7,6 +15,8 @@ from typing import Generator
 
 from config import DB_PATH
 
+
+# ── Connection Helper ────────────────────────────────────────────────────
 
 @contextmanager
 def get_connection() -> Generator[sqlite3.Connection, None, None]:
@@ -23,88 +33,95 @@ def get_connection() -> Generator[sqlite3.Connection, None, None]:
         conn.close()
 
 
+# ── Schema ───────────────────────────────────────────────────────────────
+# ✏️  CUSTOMIZE: change the table name and columns below to fit your data.
+
+TABLE_NAME = "records"
+
 def init_db() -> None:
-    """Create the jobs table if it doesn't exist."""
+    """Create the data table if it doesn't exist."""
     with get_connection() as conn:
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS jobs (
+        conn.execute(f"""
+            CREATE TABLE IF NOT EXISTS {TABLE_NAME} (
                 id            INTEGER PRIMARY KEY AUTOINCREMENT,
                 source        TEXT    NOT NULL,
-                title         TEXT    NOT NULL,
-                company       TEXT,
-                location      TEXT,
+                field_1       TEXT    NOT NULL,
+                field_2       TEXT,
+                field_3       TEXT,
                 url           TEXT,
-                tags          TEXT,
-                salary        TEXT,
-                description   TEXT,
-                date_posted   TEXT,
+                extra         TEXT,
                 date_scraped  TEXT    NOT NULL
             )
         """)
-        # Index for quick duplicate checks
-        conn.execute("""
-            CREATE UNIQUE INDEX IF NOT EXISTS idx_jobs_unique
-            ON jobs (source, title, company, url)
+        # ✏️  CUSTOMIZE: define which combination of columns makes a record unique
+        conn.execute(f"""
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_records_unique
+            ON {TABLE_NAME} (source, field_1, field_2, url)
         """)
 
 
-def insert_job(job: dict) -> bool:
-    """
-    Insert a single job record. Returns True if inserted, False if duplicate.
+# ── Insert ───────────────────────────────────────────────────────────────
 
-    Expected keys: source, title, company, location, url,
-                   tags, salary, description, date_posted
+def insert_record(record: dict) -> bool:
     """
-    job.setdefault("date_scraped", datetime.now().isoformat())
+    Insert a single record. Returns True if inserted, False if duplicate.
+
+    Expected keys should match YOUR column names above, e.g.:
+        source, field_1, field_2, field_3, url, extra
+    """
+    record.setdefault("date_scraped", datetime.now().isoformat())
     with get_connection() as conn:
         try:
-            conn.execute("""
-                INSERT INTO jobs
-                    (source, title, company, location, url,
-                     tags, salary, description, date_posted, date_scraped)
+            conn.execute(f"""
+                INSERT INTO {TABLE_NAME}
+                    (source, field_1, field_2, field_3, url, extra, date_scraped)
                 VALUES
-                    (:source, :title, :company, :location, :url,
-                     :tags, :salary, :description, :date_posted, :date_scraped)
-            """, job)
+                    (:source, :field_1, :field_2, :field_3, :url, :extra, :date_scraped)
+            """, record)
             return True
         except sqlite3.IntegrityError:
             return False  # duplicate
 
 
-def insert_jobs(jobs: list[dict]) -> tuple[int, int]:
-    """Insert multiple jobs. Returns (inserted_count, duplicate_count)."""
+def insert_records(records: list[dict]) -> tuple[int, int]:
+    """Insert multiple records. Returns (inserted_count, duplicate_count)."""
     inserted = 0
     duplicates = 0
-    for job in jobs:
-        if insert_job(job):
+    for record in records:
+        if insert_record(record):
             inserted += 1
         else:
             duplicates += 1
     return inserted, duplicates
 
 
-def get_all_jobs() -> list[dict]:
-    """Retrieve every job from the database."""
+# ── Query ────────────────────────────────────────────────────────────────
+
+def get_all_records() -> list[dict]:
+    """Retrieve every record from the database."""
     with get_connection() as conn:
-        rows = conn.execute("SELECT * FROM jobs ORDER BY date_scraped DESC").fetchall()
+        rows = conn.execute(f"SELECT * FROM {TABLE_NAME} ORDER BY date_scraped DESC").fetchall()
         return [dict(row) for row in rows]
 
 
-def get_job_count() -> int:
-    """Return total number of stored jobs."""
+def get_record_count() -> int:
+    """Return total number of stored records."""
     with get_connection() as conn:
-        return conn.execute("SELECT COUNT(*) FROM jobs").fetchone()[0]
+        return conn.execute(f"SELECT COUNT(*) FROM {TABLE_NAME}").fetchone()[0]
 
 
-def search_jobs(keyword: str) -> list[dict]:
-    """Search jobs by keyword in title, company, or tags."""
+def search_records(keyword: str) -> list[dict]:
+    """
+    Search records by keyword.
+    ✏️  CUSTOMIZE: change the WHERE clause to search your relevant columns.
+    """
     pattern = f"%{keyword}%"
     with get_connection() as conn:
-        rows = conn.execute("""
-            SELECT * FROM jobs
-            WHERE title   LIKE ?
-               OR company LIKE ?
-               OR tags    LIKE ?
+        rows = conn.execute(f"""
+            SELECT * FROM {TABLE_NAME}
+            WHERE field_1 LIKE ?
+               OR field_2 LIKE ?
+               OR extra   LIKE ?
             ORDER BY date_scraped DESC
         """, (pattern, pattern, pattern)).fetchall()
         return [dict(row) for row in rows]

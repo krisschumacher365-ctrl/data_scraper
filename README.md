@@ -1,66 +1,29 @@
-# 🕵️ Job Listing Scraper
+# 🧬 Data Scraper Blueprint
 
-A Python-based job listing scraper that fetches real-time job postings from **free public APIs** and stores them in a local **SQLite** database. Built as an AI-assisted speed project — concept to working tool in under 5 minutes.
+A **reusable Python template** for building API-based data scrapers. Clone it, swap in your target API, and you've got a working scraper with SQLite storage, deduplication, search, and CSV export — in minutes.
 
 ![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![SQLite](https://img.shields.io/badge/SQLite-003B57?style=for-the-badge&logo=sqlite&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
+![Template](https://img.shields.io/badge/Type-Blueprint-orange?style=for-the-badge)
 
 ---
 
-## ✨ Features
+## ✨ What You Get
 
-- **Multi-source scraping** — pulls from [RemoteOK](https://remoteok.com) and [Arbeitnow](https://www.arbeitnow.com) APIs
+- **Multi-source scraping** — register as many API sources as you need
 - **SQLite storage** — persistent local database with automatic deduplication
 - **Rich CLI output** — color-coded tables powered by [Rich](https://github.com/Textualize/rich)
-- **Search** — find jobs by keyword across titles, companies, and tags
-- **CSV export** — one command to export everything to a spreadsheet
-- **Zero API keys** — works out of the box with free, open APIs
+- **Search** — find records by keyword across any column
+- **CSV export** — one command to export everything
+- **Pagination support** — example pattern for paginated APIs
 - **Rate limiting** — built-in delays to be respectful to API providers
-
----
-
-## 📸 Demo
-
-```
-$ python main.py scrape
-
-Fetched 399 job listings.
-✓ Inserted: 394  ⊘ Duplicates skipped: 5
-Total jobs in database: 394
-```
-
-```
-$ python main.py stats
-
-        Database Statistics
-┏━━━━━━━━━━━┳━━━━━━┓
-┃ Source    ┃ Jobs ┃
-┡━━━━━━━━━━━╇━━━━━━┩
-│ arbeitnow │  295 │
-│ remoteok  │   99 │
-│ Total     │  394 │
-└───────────┴──────┘
-```
-
-```
-$ python main.py search python
-
-Found 4 matching jobs:
-┏━━━━━━┳━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━┓
-┃ #    ┃ Title              ┃ Company    ┃ Location ┃ Tags             ┃ Salary ┃ Source   ┃
-┡━━━━━━╇━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━┩
-│ 1    │ Backend Developer  │ AutoDS     │ Remote   │ python, backend  │        │ remoteok │
-│ 2    │ Senior DevOps Eng  │ ChowNow    │ Remote   │ python, ansible  │        │ remoteok │
-│ ...  │                    │            │          │                  │        │          │
-└──────┴────────────────────┴────────────┴──────────┴──────────────────┴────────┴──────────┘
-```
 
 ---
 
 ## 🚀 Quick Start
 
-### 1. Clone the repo
+### 1. Clone the blueprint
 
 ```bash
 git clone https://github.com/krisschumacher365-ctrl/data_scraper.git
@@ -73,14 +36,17 @@ cd data_scraper
 pip install -r requirements.txt
 ```
 
-### 3. Run it
+### 3. Customize for your target (see guide below)
+
+### 4. Run it
 
 ```bash
-python main.py scrape       # Fetch jobs from all sources
-python main.py list         # View all stored jobs
-python main.py search AI    # Search by keyword
-python main.py stats        # Database statistics
-python main.py export       # Export to CSV
+python main.py scrape              # Scrape all sources
+python main.py scrape <source>     # Scrape one source
+python main.py list                # View all stored records
+python main.py search <keyword>    # Search by keyword
+python main.py stats               # Database statistics
+python main.py export              # Export to CSV
 ```
 
 ---
@@ -88,11 +54,11 @@ python main.py export       # Export to CSV
 ## 📁 Project Structure
 
 ```
-job-scraper/
+data_scraper/
 ├── main.py             # CLI entry point & commands
-├── scraper.py          # API fetching logic (RemoteOK, Arbeitnow)
-├── database.py         # SQLite operations (insert, search, dedup)
-├── config.py           # API endpoints & settings
+├── scraper.py          # API fetching logic (✏️ add your scrapers here)
+├── database.py         # SQLite operations (✏️ define your schema here)
+├── config.py           # API endpoints & settings (✏️ configure here)
 ├── requirements.txt    # Python dependencies
 ├── LICENSE             # MIT License
 └── README.md           # You are here
@@ -100,21 +66,80 @@ job-scraper/
 
 ---
 
-## 🛠️ How It Works
+## 🛠️ How to Adapt This Blueprint
+
+Follow these **4 steps** to turn this template into a working scraper for any API:
+
+### Step 1 → `config.py` — Set your API endpoints
+
+```python
+APIS = {
+    "my_api": {
+        "url": "https://api.example.com/v1/items",
+        "description": "My data source",
+    },
+}
+```
+
+### Step 2 → `database.py` — Define your data schema
+
+Edit the `CREATE TABLE` statement and column names to match the data you're collecting:
+
+```python
+TABLE_NAME = "products"  # or "articles", "listings", etc.
+
+# Then update the CREATE TABLE columns:
+#   field_1 → name
+#   field_2 → price
+#   field_3 → category
+#   ...
+```
+
+### Step 3 → `scraper.py` — Write your scraper function
+
+Map the API response fields to your database columns:
+
+```python
+def scrape_my_api() -> list[dict]:
+    data = _get(APIS["my_api"]["url"]).json()
+    records = []
+    for item in data:
+        records.append({
+            "source":  "my_api",
+            "field_1": item["name"],
+            "field_2": item["price"],
+            "field_3": item["category"],
+            "url":     item["link"],
+            "extra":   "",
+            "date_scraped": datetime.now().isoformat(),
+        })
+    return records
+
+# Register it:
+SCRAPERS = {"my_api": scrape_my_api}
+```
+
+### Step 4 → `main.py` — Update the display table
+
+Change the column headers in `_print_table()` to match your fields.
+
+---
+
+## 🏗️ Architecture
 
 ```
 ┌──────────────┐     HTTP GET      ┌──────────────┐
-│  RemoteOK    │◄──────────────────│              │
-│  (JSON API)  │──────────────────►│              │
-└──────────────┘    Job listings   │   scraper.py │
+│  API Source 1 │◄──────────────────│              │
+│  (JSON)      │──────────────────►│              │
+└──────────────┘    raw data       │  scraper.py  │
                                    │              │
-┌──────────────┐     HTTP GET      │              │
-│  Arbeitnow   │◄──────────────────│              │
-│  (JSON API)  │──────────────────►│              │
-└──────────────┘    Job listings   └──────┬───────┘
+┌──────────────┐     HTTP GET      │  • _get()    │
+│  API Source 2 │◄──────────────────│  • scrapers  │
+│  (JSON)      │──────────────────►│  • registry  │
+└──────────────┘    raw data       └──────┬───────┘
                                           │
                                     Normalized
-                                    job dicts
+                                    record dicts
                                           │
                                           ▼
                                    ┌──────────────┐
@@ -125,17 +150,18 @@ job-scraper/
                                    │   unique idx │
                                    │ • Search     │
                                    │ • Export     │
+                                   └──────┬───────┘
+                                          │
+                                          ▼
+                                   ┌──────────────┐
+                                   │   main.py    │
+                                   │   (CLI)      │
+                                   │              │
+                                   │ • Rich table │
+                                   │ • CSV export │
+                                   │ • Stats      │
                                    └──────────────┘
 ```
-
----
-
-## 📊 Available Data Sources
-
-| Source | Type | Auth Required | Jobs Per Fetch |
-|--------|------|:---:|:---:|
-| [RemoteOK](https://remoteok.com/api) | Remote jobs | ❌ None | ~100 |
-| [Arbeitnow](https://www.arbeitnow.com/api/job-board-api) | EU job board | ❌ None | ~300 |
 
 ---
 
@@ -143,18 +169,28 @@ job-scraper/
 
 - **Python 3.11+** — core language
 - **[Requests](https://docs.python-requests.org/)** — HTTP client
-- **[Rich](https://github.com/Textualize/rich)** — terminal tables & formatting
-- **SQLite** — zero-config embedded database (via Python stdlib)
-- **GitHub Copilot** — AI-assisted development
+- **[Rich](https://github.com/Textualize/rich)** — terminal formatting
+- **SQLite** — zero-config embedded database (stdlib)
+
+---
+
+## 💡 Ideas for Extending
+
+- Add **HTML scraping** with BeautifulSoup for non-API sites
+- Add **browser automation** with Playwright/Selenium for JS-rendered pages
+- Add **scheduling** with `cron` or `schedule` for periodic scrapes
+- Add **API authentication** (API keys, OAuth) in the `_get()` helper
+- Add **notifications** (email, Slack, Discord) when new records appear
+- Swap SQLite for **PostgreSQL** or **MongoDB** for larger datasets
 
 ---
 
 ## 📝 License
 
-This project is licensed under the MIT License — see [LICENSE](LICENSE) for details.
+MIT — see [LICENSE](LICENSE) for details.
 
 ---
 
 <p align="center">
-  <i>Built with AI assistance in under 5 minutes ⚡</i>
+  <i>A reusable scraper blueprint — fork it, customize it, ship it 🚀</i>
 </p>

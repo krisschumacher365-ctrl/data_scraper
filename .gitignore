@@ -13,10 +13,10 @@ venv/
 env/
 
 # Database (regenerated on each scrape)
-jobs.db
+*.db
 
 # Exports
-jobs_export.csv
+*.csv
 
 # IDE
 .vscode/
