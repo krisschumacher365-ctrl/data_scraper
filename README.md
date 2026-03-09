@@ -63,8 +63,8 @@ Found 4 matching jobs:
 ### 1. Clone the repo
 
 ```bash
-git clone https://github.com/krisschumacher365-ctrl/data_scrapper.git
-cd data_scrapper
+git clone https://github.com/krisschumacher365-ctrl/data_scraper.git
+cd data_scraper
 ```
 
 ### 2. Install dependencies
